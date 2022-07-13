@@ -80,7 +80,8 @@ public class ChatClient {
                 frame,
                 "Enter IP Address of the Server:",
                 "Welcome to the Chatter",
-                JOptionPane.QUESTION_MESSAGE);
+                JOptionPane.QUESTION_MESSAGE
+        );
     }
 
     /**

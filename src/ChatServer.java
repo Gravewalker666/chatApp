@@ -4,6 +4,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 
 /**
@@ -41,9 +43,9 @@ public class ChatServer {
 
     /**
      * The set of all the print writers for all the clients.  This
-     * set is kept so we can easily broadcast messages.
+     * set is kept, so we can easily broadcast messages.
      */
-    final private static HashSet<PrintWriter> writers = new HashSet<PrintWriter>();
+    final private static HashMap<String, PrintWriter> writers = new HashMap<>();
 
     /**
      * The appplication main method, which just listens on a port and
@@ -93,8 +95,7 @@ public class ChatServer {
             try {
 
                 // Create character streams for the socket.
-                in = new BufferedReader(new InputStreamReader(
-                        socket.getInputStream()));
+                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 out = new PrintWriter(socket.getOutputStream(), true);
 
                 // Request a name from this client.  Keep requesting until
@@ -107,28 +108,26 @@ public class ChatServer {
                     if (name == null) {
                         return;
                     }
-
-                    // TODO: Add code to ensure the thread safety of the
-                    // the shared variable 'names'
-                    if (!names.contains(name)) {
-                        names.add(name);
-                        break;
+                    synchronized (names) {
+                        if (!names.contains(name)) {
+                            names.add(name);
+                            break;
+                        }
                     }
-
                 }
 
                 // Now that a successful name has been chosen, add the
                 // socket's print writer to the set of all writers so
                 // this client can receive broadcast messages.
                 out.println("NAMEACCEPTED");
-                writers.add(out);
+                writers.put(name, out);
 
                 // TODO: You may have to add some code here to broadcast all clients the new
                 // client's name for the task 9 on the lab sheet.
 
 
                 // Accept messages from this client and broadcast them.
-                // Ignore other clients that cannot be broadcasted to.
+                // Ignore other clients that cannot be broadcast to.
                 while (true) {
                     String input = in.readLine();
                     if (input == null) {
@@ -138,15 +137,34 @@ public class ChatServer {
                     // TODO: Add code to send a message to a specific client and not
                     // all clients. You may have to use a HashMap to store the sockets along
                     // with the chat client names
-                    for (PrintWriter writer : writers) {
-                        writer.println("MESSAGE " + name + ": " + input);
+                    String messageToBeSent = input;
+                    HashSet<PrintWriter> writersToBeWrittenOn = new HashSet<>();
+
+                    String[] destructuredInput = input.split(">>");
+                    boolean isMessagePointToPoint = destructuredInput.length == 2;
+                    if (isMessagePointToPoint) {
+                        String receiver = destructuredInput[0];
+                        String message = "(private) " + destructuredInput[1];
+                        PrintWriter writer = writers.get(receiver);
+                        if (writer != null) {
+                            messageToBeSent = message;
+                            writersToBeWrittenOn.add(writers.get(name));
+                            writersToBeWrittenOn.add(writer);
+                        } else {
+                            writersToBeWrittenOn.addAll(writers.values());
+                        }
+                    } else {
+                        writersToBeWrittenOn.addAll(writers.values());
+                    }
+                    for (PrintWriter writer : writersToBeWrittenOn) {
+                        writer.println("MESSAGE " + name + ": " + messageToBeSent);
                     }
                 }
-            }// TODO: Handle the SocketException here to handle a client closing the socket
+            } // TODO: Handle the SocketException here to handle a client closing the socket
             catch (IOException e) {
-                System.out.println(e);
+                System.out.println(e.getMessage());
             } finally {
-                // This client is going down!  Remove its name and its print
+                // This client is going down! Remove its name and its print
                 // writer from the sets, and close its socket.
                 if (name != null) {
                     names.remove(name);
