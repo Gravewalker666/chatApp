@@ -119,9 +119,11 @@ public class ChatServer {
                 // socket's print writer to the set of all writers so
                 // this client can receive broadcast messages.
                 out.println("NAMEACCEPTED");
+                // Setting up the active users tab on this client
                 for (String activeUserName: names) {
                     out.println("NEW_USER" + activeUserName);
                 }
+                // Sending out the message to other clients to add this newly added user into their active users list
                 for (PrintWriter writer: writers.values()) {
                     writer.println("NEW_USER" + name);
                 }
@@ -135,33 +137,38 @@ public class ChatServer {
                         return;
                     }
 
-                    String messageToBeSent = "";
-                    HashSet<PrintWriter> writersToBeWrittenOn = new HashSet<>();
-                    writersToBeWrittenOn.add(writers.get(name));
+                    synchronized (writers) {
+                        String messageToBeSent = "";
+                        HashSet<PrintWriter> writersToBeWrittenOn = new HashSet<>();
+                        writersToBeWrittenOn.add(writers.get(name));
 
-                    String[] destructuredInput = input.split(">>");
-                    boolean isMessageStructuredProperly = destructuredInput.length == 2;
-                    if (isMessageStructuredProperly) {
-                        String[] receivers = destructuredInput[0].split(",");
-                        messageToBeSent = destructuredInput[1];
-                        if (receivers.length == 1 && receivers[0].equals("ALL")) {
-                            writersToBeWrittenOn.addAll(writers.values());
-                        } else {
-                            for (String receiverName: receivers) {
-                                if (receiverName != null) {
-                                    PrintWriter writer = writers.get(receiverName);
-                                    if (writer != null) writersToBeWrittenOn.add(writer);
+                        // Using the structure : RECEIVERS_LIST or "ALL">>MESSAGE
+                        // Receivers list is a comma seperated list of names ex Nimal,Kamal,Saman
+                        // Value ALL is the indicator to broadcast the message to all the active users
+                        String[] destructuredInput = input.split(">>");
+                        boolean isMessageStructuredProperly = destructuredInput.length == 2;
+                        if (isMessageStructuredProperly) {
+                            String[] receivers = destructuredInput[0].split(",");
+                            messageToBeSent = destructuredInput[1];
+                            if (receivers.length == 1 && receivers[0].equals("ALL")) {
+                                writersToBeWrittenOn.addAll(writers.values());
+                            } else {
+                                for (String receiverName: receivers) {
+                                    if (receiverName != null) {
+                                        PrintWriter writer = writers.get(receiverName);
+                                        if (writer != null) writersToBeWrittenOn.add(writer);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    if (writersToBeWrittenOn.size() == 1) {
-                        messageToBeSent = "Couldn't find the receiver(s). Message: " + messageToBeSent;
-                    }
+                        if (writersToBeWrittenOn.size() == 1) {
+                            messageToBeSent = "Couldn't find the receiver(s). Message: " + messageToBeSent;
+                        }
 
-                    for (PrintWriter writer : writersToBeWrittenOn) {
-                        writer.println("MESSAGE " + name + ": " + messageToBeSent);
+                        for (PrintWriter writer : writersToBeWrittenOn) {
+                            writer.println("MESSAGE " + name + ": " + messageToBeSent);
+                        }
                     }
                 }
             } catch (IOException e) {
@@ -172,6 +179,7 @@ public class ChatServer {
                 if (name != null) {
                     names.remove(name);
                     writers.remove(name);
+                    // Sending out the message to client to remove this user from their lists of active users
                     for (PrintWriter writer: writers.values()) {
                         writer.println("REMOVE_USER" + name);
                     }

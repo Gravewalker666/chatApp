@@ -61,6 +61,7 @@ public class ChatClient {
              * the text area in preparation for the next message.
              */
             public void actionPerformed(ActionEvent e) {
+                // Making the structure that is accepted by the server
                 List<String> receivers = activeUsersComponent.getSelectedValuesList();
                 StringBuilder structuredMessage = new StringBuilder();
                 if (receivers.isEmpty() || broadcastCheck.isSelected()) {
@@ -125,8 +126,10 @@ public class ChatClient {
             } else if (line.startsWith("MESSAGE")) {
                 messageArea.append(line.substring(8) + "\n");
             } else if (line.startsWith("NEW_USER")) {
+                // Catching the message to add a new user to the active users list
                 activeUsersList.addElement(line.substring(8));
             } else if (line.startsWith("REMOVE_USER")) {
+                // Catching the message to remove the said user from the activer users list
                 String nameToBeRemoved = line.substring(11);
                 for (int i = 0; i < activeUsersList.size(); i++) {
                     String element = activeUsersList.getElementAt(i);
