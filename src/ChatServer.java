@@ -4,7 +4,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -120,6 +119,12 @@ public class ChatServer {
                 // socket's print writer to the set of all writers so
                 // this client can receive broadcast messages.
                 out.println("NAMEACCEPTED");
+                for (String activeUserName: names) {
+                    out.println("NEW_USER" + activeUserName);
+                }
+                for (PrintWriter writer: writers.values()) {
+                    writer.println("NEW_USER" + name);
+                }
                 writers.put(name, out);
 
                 // TODO: You may have to add some code here to broadcast all clients the new
@@ -160,21 +165,21 @@ public class ChatServer {
                         writer.println("MESSAGE " + name + ": " + messageToBeSent);
                     }
                 }
-            } // TODO: Handle the SocketException here to handle a client closing the socket
-            catch (IOException e) {
+            } catch (IOException e) {
                 System.out.println(e.getMessage());
             } finally {
                 // This client is going down! Remove its name and its print
                 // writer from the sets, and close its socket.
                 if (name != null) {
                     names.remove(name);
-                }
-                if (out != null) {
-                    writers.remove(out);
+                    writers.remove(name);
+                    for (PrintWriter writer: writers.values()) {
+                        writer.println("REMOVE_USER" + name);
+                    }
                 }
                 try {
                     socket.close();
-                } catch (IOException e) {
+                } catch (IOException ignored) {
                 }
             }
         }

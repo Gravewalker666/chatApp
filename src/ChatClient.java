@@ -1,3 +1,4 @@
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
@@ -5,12 +6,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Iterator;
 
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
+import javax.swing.*;
 
 /**
  * A simple Swing-based client for the chat server.  Graphically
@@ -35,7 +33,8 @@ public class ChatClient {
     JFrame frame = new JFrame("Chatter");
     JTextField textField = new JTextField(40);
     JTextArea messageArea = new JTextArea(8, 40);
-    // TODO: Add a list box
+    DefaultListModel<String> activeUsersList = new DefaultListModel<>();
+    JList<String> activeUsersComponent = new JList<>(activeUsersList);
 
     /**
      * Constructs the client by laying out the GUI and registering a
@@ -46,17 +45,17 @@ public class ChatClient {
      * message from the server.
      */
     public ChatClient() {
-
-        // Layout GUI
         textField.setEditable(false);
         messageArea.setEditable(false);
-        frame.getContentPane().add(textField, "North");
-        frame.getContentPane().add(new JScrollPane(messageArea), "Center");
+//        activeUsersList.addElement("something");
+        frame.getContentPane().add(textField, BorderLayout.SOUTH);
+        frame.getContentPane().add(new JScrollPane(messageArea), BorderLayout.CENTER);
+        frame.getContentPane().add(activeUsersComponent, BorderLayout.EAST);
         frame.pack();
 
         // TODO: You may have to edit this event handler to handle point to point messaging,
         // where one client can send a message to a specific client. You can add some header to
-        // the message to identify the recipient. You can get the receipient name from the listbox.
+        // the message to identify the recipient. You can get the recipient name from the listbox.
         textField.addActionListener(new ActionListener() {
             /**
              * Responds to pressing the enter key in the textfield by sending
@@ -118,6 +117,17 @@ public class ChatClient {
                 textField.setEditable(true);
             } else if (line.startsWith("MESSAGE")) {
                 messageArea.append(line.substring(8) + "\n");
+            } else if (line.startsWith("NEW_USER")) {
+                activeUsersList.addElement(line.substring(8));
+            } else if (line.startsWith("REMOVE_USER")) {
+                String nameToBeRemoved = line.substring(11);
+                for (int i = 0; i < activeUsersList.size(); i++) {
+                    String element = activeUsersList.getElementAt(i);
+                    if (element.equals(nameToBeRemoved)) {
+                        activeUsersList.removeElementAt(i);
+                        break;
+                    }
+                }
             }
         }
     }
@@ -128,6 +138,7 @@ public class ChatClient {
     public static void main(String[] args) throws Exception {
         ChatClient client = new ChatClient();
         client.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        client.frame.setSize(500, 500);
         client.frame.setVisible(true);
         client.run();
     }
