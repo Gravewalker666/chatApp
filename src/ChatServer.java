@@ -127,10 +127,6 @@ public class ChatServer {
                 }
                 writers.put(name, out);
 
-                // TODO: You may have to add some code here to broadcast all clients the new
-                // client's name for the task 9 on the lab sheet.
-
-
                 // Accept messages from this client and broadcast them.
                 // Ignore other clients that cannot be broadcast to.
                 while (true) {
@@ -139,28 +135,31 @@ public class ChatServer {
                         return;
                     }
 
-                    // TODO: Add code to send a message to a specific client and not
-                    // all clients. You may have to use a HashMap to store the sockets along
-                    // with the chat client names
-                    String messageToBeSent = input;
+                    String messageToBeSent = "";
                     HashSet<PrintWriter> writersToBeWrittenOn = new HashSet<>();
+                    writersToBeWrittenOn.add(writers.get(name));
 
                     String[] destructuredInput = input.split(">>");
-                    boolean isMessagePointToPoint = destructuredInput.length == 2;
-                    if (isMessagePointToPoint) {
-                        String receiver = destructuredInput[0];
-                        String message = "(private) " + destructuredInput[1];
-                        PrintWriter writer = writers.get(receiver);
-                        if (writer != null) {
-                            messageToBeSent = message;
-                            writersToBeWrittenOn.add(writers.get(name));
-                            writersToBeWrittenOn.add(writer);
-                        } else {
+                    boolean isMessageStructuredProperly = destructuredInput.length == 2;
+                    if (isMessageStructuredProperly) {
+                        String[] receivers = destructuredInput[0].split(",");
+                        messageToBeSent = destructuredInput[1];
+                        if (receivers.length == 1 && receivers[0].equals("ALL")) {
                             writersToBeWrittenOn.addAll(writers.values());
+                        } else {
+                            for (String receiverName: receivers) {
+                                if (receiverName != null) {
+                                    PrintWriter writer = writers.get(receiverName);
+                                    if (writer != null) writersToBeWrittenOn.add(writer);
+                                }
+                            }
                         }
-                    } else {
-                        writersToBeWrittenOn.addAll(writers.values());
                     }
+
+                    if (writersToBeWrittenOn.size() == 1) {
+                        messageToBeSent = "Couldn't find the receiver(s). Message: " + messageToBeSent;
+                    }
+
                     for (PrintWriter writer : writersToBeWrittenOn) {
                         writer.println("MESSAGE " + name + ": " + messageToBeSent);
                     }

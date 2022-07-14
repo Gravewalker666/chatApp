@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.Iterator;
+import java.util.List;
 
 import javax.swing.*;
 
@@ -47,23 +47,30 @@ public class ChatClient {
     public ChatClient() {
         textField.setEditable(false);
         messageArea.setEditable(false);
-//        activeUsersList.addElement("something");
         frame.getContentPane().add(textField, BorderLayout.SOUTH);
         frame.getContentPane().add(new JScrollPane(messageArea), BorderLayout.CENTER);
         frame.getContentPane().add(activeUsersComponent, BorderLayout.EAST);
         frame.pack();
 
-        // TODO: You may have to edit this event handler to handle point to point messaging,
-        // where one client can send a message to a specific client. You can add some header to
-        // the message to identify the recipient. You can get the recipient name from the listbox.
         textField.addActionListener(new ActionListener() {
             /**
              * Responds to pressing the enter key in the textfield by sending
-             * the contents of the text field to the server.    Then clear
+             * the contents of the text field to the server. Then clear
              * the text area in preparation for the next message.
              */
             public void actionPerformed(ActionEvent e) {
-                out.println(textField.getText());
+                List<String> receivers = activeUsersComponent.getSelectedValuesList();
+                StringBuilder structuredMessage = new StringBuilder();
+                if (receivers.isEmpty()) {
+                    structuredMessage.append("ALL");
+                } else {
+                    for (String receiver: receivers) {
+                        structuredMessage.append(receiver).append(",");
+                    }
+                }
+                structuredMessage.append(">>");
+                structuredMessage.append(textField.getText());
+                out.println(structuredMessage);
                 textField.setText("");
             }
         });
@@ -107,8 +114,6 @@ public class ChatClient {
         out = new PrintWriter(socket.getOutputStream(), true);
 
         // Process all messages from server, according to the protocol.
-
-        // TODO: You may have to extend this protocol to achieve task 9 in the lab sheet
         while (true) {
             String line = in.readLine();
             if (line.startsWith("SUBMITNAME")) {
