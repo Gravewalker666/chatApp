@@ -35,6 +35,7 @@ public class ChatClient {
     JTextArea messageArea = new JTextArea(8, 40);
     DefaultListModel<String> activeUsersList = new DefaultListModel<>();
     JList<String> activeUsersComponent = new JList<>(activeUsersList);
+    JCheckBox broadcastCheck = new JCheckBox("Broadcast");
 
     /**
      * Constructs the client by laying out the GUI and registering a
@@ -47,9 +48,10 @@ public class ChatClient {
     public ChatClient() {
         textField.setEditable(false);
         messageArea.setEditable(false);
-        frame.getContentPane().add(textField, BorderLayout.SOUTH);
+        frame.getContentPane().add(textField, BorderLayout.NORTH);
         frame.getContentPane().add(new JScrollPane(messageArea), BorderLayout.CENTER);
         frame.getContentPane().add(activeUsersComponent, BorderLayout.EAST);
+        frame.getContentPane().add(broadcastCheck, BorderLayout.AFTER_LAST_LINE);
         frame.pack();
 
         textField.addActionListener(new ActionListener() {
@@ -61,7 +63,7 @@ public class ChatClient {
             public void actionPerformed(ActionEvent e) {
                 List<String> receivers = activeUsersComponent.getSelectedValuesList();
                 StringBuilder structuredMessage = new StringBuilder();
-                if (receivers.isEmpty()) {
+                if (receivers.isEmpty() || broadcastCheck.isSelected()) {
                     structuredMessage.append("ALL");
                 } else {
                     for (String receiver: receivers) {
